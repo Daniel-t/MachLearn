@@ -1,0 +1,64 @@
+Distinguishing Correct Excercise Technique with the HAR dataset
+===============================================================
+## Daniel Thomas 2014
+This report was written for the Practical Machine Learning Coursera class running July 2014.
+
+In this activity we analyse data from http://groupware.les.inf.puc-rio.br/har which includes measurements from multiple sensors during a specific excercaise.  Each record is marked as to if the excercise technique is correct 'Classe A' or a specific incorrect technique 'Classe B-E'.   We take this data and attempt to constuct a machine learning algorithm which will correctly identify future samples to determine if the technique is correct, or otherwise which error is being made.
+
+
+### Environment
+We start by setting the environment, establishing a fixed seed (for reproducibility) and loading necessary libraries.
+```{r environment}
+library(plyr)
+library(dplyr)
+library(caret)
+set.seed(12321)
+
+```
+### Data load and cleanse
+Data is loaded from the training file and the following transformations are made
+. records with new_window == "yes" are discarded as these contain summary data which is not useful for this excercise
+. columns beginning with stddev, var, avg, max, min, amplitude, kurtosis and skewness are discarded. These only have a value for new_window=="yes" records, so are not value adding here.
+. Columns X, username, timestamps (all three), new_window & num_window are discarded
+. the 'classe' column is converted to a factor.
+```{r dataLoad}
+allData<-read.csv(file="data//pml-training.csv",na.strings = "NA",stringsAsFactors=F)
+
+#drop all new_window rows
+allData<-allData %>% filter(new_window!="yes")
+allData<-allData %>% select(-starts_with('stddev_'),-starts_with('var_'),-starts_with('avg_'),-starts_with('min_'),-starts_with('amplitude_'),-starts_with('max_'),-starts_with('kurtosis'),-starts_with('skewness'))
+
+allData<-allData %>% select(-X,-user_name,-starts_with('raw_timestamp_part'),-cvtd_timestamp,-new_window,-num_window)
+
+#convert classe to a factor
+
+allData<-allData %>% mutate(classe=as.factor(classe))
+```
+
+### Training and Validation DataSets
+After the initial transformations, data is split into a training and cross validation set, such that around 70% of records are avaialable for training, with the remainder used for checking for validation testing.
+
+```{r}
+inTrain<-createDataPartition(allData$classe,p=0.7,list=F)
+training<-allData[inTrain,]
+cvTrain<-allData[-inTrain,]
+
+```
+
+### Model building
+Now we create a model from the training data set with the 'GBM' method.   Once the model is built we print the confusion matrix to show the level of accuracy obtained. 
+```{r cache=TRUE}
+mod<-train(classe ~. ,data=training,method="gbm",verbose=F)
+predTrain<-predict(mod,training)
+confusionMatrix(training$classe,predTrain)
+```
+As can be seen with the training set an accuracy of **97.6%** was obtained, leaving an error rate of **2.4%**, the 95% confidence interval is 97.3% to 97.8% 
+
+### Model Validation
+Finally our model is validated against the data kept aside for validation and the confusion matrix supplied below.
+```{r}
+predTest<-predict(mod,cvTrain)
+confusionMatrix(cvTrain$classe,predTest)
+```
+
+This shows an accuracy of **96.5%**, or an error rate of **3.5%** which can be expected to be similar to new sample data as the validation data was not used in construction of the model.   The 95% Confidence Interval for the validation test is 96% to 97%.   This is a very good result, so some confidence can be placed on predictions made using this model.
