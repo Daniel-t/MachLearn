@@ -1,7 +1,7 @@
 Practivcal Machine Learning assignment
 =========
 
-Please see Assignment.html for the report,
+Please see Assignment.md/Assignment.html for the report,
 
 Note: Data is not included, however can be obtained from:
 https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
