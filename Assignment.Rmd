@@ -17,10 +17,10 @@ set.seed(12321)
 ```
 ### Data load and cleanse
 Data is loaded from the training file and the following transformations are made
-. records with new_window == "yes" are discarded as these contain summary data which is not useful for this excercise
-. columns beginning with stddev, var, avg, max, min, amplitude, kurtosis and skewness are discarded. These only have a value for new_window=="yes" records, so are not value adding here.
-. Columns X, username, timestamps (all three), new_window & num_window are discarded
-. the 'classe' column is converted to a factor.
+* records with new_window == "yes" are discarded as these contain summary data which is not useful for this excercise
+* columns beginning with stddev, var, avg, max, min, amplitude, kurtosis and skewness are discarded. These only have a value for new_window=="yes" records, so are not value adding here.
+* Columns X, username, timestamps (all three), new_window & num_window are discarded
+* the 'classe' column is converted to a factor.
 ```{r dataLoad}
 allData<-read.csv(file="data//pml-training.csv",na.strings = "NA",stringsAsFactors=F)
 

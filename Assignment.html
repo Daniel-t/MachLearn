@@ -223,11 +223,14 @@ library(dplyr)
 
 <h3>Data load and cleanse</h3>
 
-<p>Data is loaded from the training file and the following transformations are made
-. records with new_window == &ldquo;yes&rdquo; are discarded as these contain summary data which is not useful for this excercise
-. columns beginning with stddev, var, avg, max, min, amplitude, kurtosis and skewness are discarded. These only have a value for new_window==&ldquo;yes&rdquo; records, so are not value adding here.
-. Columns X, username, timestamps (all three), new_window &amp; num_window are discarded
-. the &#39;classe&#39; column is converted to a factor.</p>
+<p>Data is loaded from the training file and the following transformations are made</p>
+
+<ul>
+<li>records with new_window == &ldquo;yes&rdquo; are discarded as these contain summary data which is not useful for this excercise</li>
+<li>columns beginning with stddev, var, avg, max, min, amplitude, kurtosis and skewness are discarded. These only have a value for new_window==&ldquo;yes&rdquo; records, so are not value adding here.</li>
+<li>Columns X, username, timestamps (all three), new_window &amp; num_window are discarded</li>
+<li>the &#39;classe&#39; column is converted to a factor.</li>
+</ul>
 
 <pre><code class="r">allData&lt;-read.csv(file=&quot;data//pml-training.csv&quot;,na.strings = &quot;NA&quot;,stringsAsFactors=F)
 
