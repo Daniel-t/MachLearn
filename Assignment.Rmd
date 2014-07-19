@@ -35,6 +35,12 @@ allData<-allData %>% select(-X,-user_name,-starts_with('raw_timestamp_part'),-cv
 allData<-allData %>% mutate(classe=as.factor(classe))
 ```
 
+### Data normalisation
+All data is normalised to a mean of 0 and sd of 1.
+```{r}
+normalise<-function(x){;m<-mean(x);s<-sd(x);x<-(x-m)/s;x}
+for (x in seq(1,dim(allData)[2]-1)) {allData[,x]<-normalise(allData[,x])}
+```
 ### Training and Validation DataSets
 After the initial transformations, data is split into a training and cross validation set, such that around 70% of records are avaialable for training, with the remainder used for checking for validation testing.
 
@@ -52,13 +58,25 @@ mod<-train(classe ~. ,data=training,method="gbm",verbose=F)
 predTrain<-predict(mod,training)
 confusionMatrix(training$classe,predTrain)
 ```
-As can be seen with the training set an accuracy of **97.6%** was obtained, leaving an error rate of **2.4%**, the 95% confidence interval is 97.3% to 97.8% 
+As can be seen with the training set an accuracy of **97.5%** was obtained, leaving an error rate of **2.5%**, the 95% confidence interval is 97.2% to 97.7% 
 
 ### Model Validation
-Finally our model is validated against the data kept aside for validation and the confusion matrix supplied below.
+Our model is now validated against the data kept aside for validation and the confusion matrix supplied below.
 ```{r}
 predTest<-predict(mod,cvTrain)
 confusionMatrix(cvTrain$classe,predTest)
 ```
 
-This shows an accuracy of **96.5%**, or an error rate of **3.5%** which can be expected to be similar to new sample data as the validation data was not used in construction of the model.   The 95% Confidence Interval for the validation test is 96% to 97%.   This is a very good result, so some confidence can be placed on predictions made using this model.
+This shows an accuracy of **96.6%**, or an error rate of **3.4%** which can be expected to be similar to new sample data as the validation data was not used in construction of the model.   The 95% Confidence Interval for the validation test is 96.1% to 97.1%.   This is a very good result, so some confidence can be placed on predictions made using this model.
+
+### Model Analysis
+Finally we analyse the model and investigate the significant parameters, it is interesting to note that 50% of the relative influence in the model comes from only 5 of ~50 variables, as shown in the second graph below:
+```{r}
+s<-summary(mod)
+chart<-data.frame(variable=s$var[seq(1,5)],influence=s$rel.inf[seq(1,5)])
+qplot(x=variable,y=influence,data=chart,geom="bar", stat="identity")
+```
+From this we can show the impacts of key variables on the outcome, such as this which shows groupings for particular error types
+```{r}
+qplot(x=roll_belt,y=pitch_forearm,color=classe,data=cvTrain,main="Classe from pitch_forearm against roll_belt")
+```

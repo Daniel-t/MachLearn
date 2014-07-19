@@ -64,6 +64,13 @@ allData<-allData %>% select(-X,-user_name,-starts_with('raw_timestamp_part'),-cv
 allData<-allData %>% mutate(classe=as.factor(classe))
 ```
 
+### Data normalisation
+All data is normalised to a mean of 0 and sd of 1.
+
+```r
+normalise<-function(x){;m<-mean(x);s<-sd(x);x<-(x-m)/s;x}
+for (x in seq(1,dim(allData)[2]-1)) {allData[,x]<-normalise(allData[,x])}
+```
 ### Training and Validation DataSets
 After the initial transformations, data is split into a training and cross validation set, such that around 70% of records are avaialable for training, with the remainder used for checking for validation testing.
 
@@ -79,50 +86,6 @@ Now we create a model from the training data set with the 'GBM' method.   Once t
 
 ```r
 mod<-train(classe ~. ,data=training,method="gbm",verbose=F)
-predTrain<-predict(mod,training)
-confusionMatrix(training$classe,predTrain)
-```
-
-```
-## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction    A    B    C    D    E
-##          A 3794   23   10    2    1
-##          B   59 2502   39    3    0
-##          C    0   51 2276   17    3
-##          D    0    8   44 2147    4
-##          E    5   16   18   25 2406
-## 
-## Overall Statistics
-##                                         
-##                Accuracy : 0.976         
-##                  95% CI : (0.973, 0.978)
-##     No Information Rate : 0.287         
-##     P-Value [Acc > NIR] : < 2e-16       
-##                                         
-##                   Kappa : 0.969         
-##  Mcnemar's Test P-Value : 1.21e-14      
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity             0.983    0.962    0.953    0.979    0.997
-## Specificity             0.996    0.991    0.994    0.995    0.994
-## Pos Pred Value          0.991    0.961    0.970    0.975    0.974
-## Neg Pred Value          0.993    0.991    0.990    0.996    0.999
-## Prevalence              0.287    0.193    0.177    0.163    0.179
-## Detection Rate          0.282    0.186    0.169    0.160    0.179
-## Detection Prevalence    0.285    0.193    0.174    0.164    0.184
-## Balanced Accuracy       0.990    0.977    0.974    0.987    0.995
-```
-As can be seen with the training set an accuracy of **97.6%** was obtained, leaving an error rate of **2.4%**, the 95% confidence interval is 97.3% to 97.8% 
-
-### Model Validation
-Finally our model is validated against the data kept aside for validation and the confusion matrix supplied below.
-
-```r
-predTest<-predict(mod,cvTrain)
 ```
 
 ```
@@ -141,6 +104,50 @@ predTest<-predict(mod,cvTrain)
 ```
 
 ```r
+predTrain<-predict(mod,training)
+confusionMatrix(training$classe,predTrain)
+```
+
+```
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 3793   23   13    0    1
+##          B   59 2491   50    3    0
+##          C    0   60 2266   19    2
+##          D    0    3   54 2141    5
+##          E    2   12   16   19 2421
+## 
+## Overall Statistics
+##                                         
+##                Accuracy : 0.975         
+##                  95% CI : (0.972, 0.977)
+##     No Information Rate : 0.286         
+##     P-Value [Acc > NIR] : <2e-16        
+##                                         
+##                   Kappa : 0.968         
+##  Mcnemar's Test P-Value : NA            
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity             0.984    0.962    0.945    0.981    0.997
+## Specificity             0.996    0.990    0.993    0.994    0.996
+## Pos Pred Value          0.990    0.957    0.965    0.972    0.980
+## Neg Pred Value          0.994    0.991    0.988    0.996    0.999
+## Prevalence              0.286    0.192    0.178    0.162    0.181
+## Detection Rate          0.282    0.185    0.168    0.159    0.180
+## Detection Prevalence    0.285    0.193    0.174    0.164    0.184
+## Balanced Accuracy       0.990    0.976    0.969    0.988    0.996
+```
+As can be seen with the training set an accuracy of **97.6%** was obtained, leaving an error rate of **2.4%**, the 95% confidence interval is 97.3% to 97.8% 
+
+### Model Validation
+Our model is now validated against the data kept aside for validation and the confusion matrix supplied below.
+
+```r
+predTest<-predict(mod,cvTrain)
 confusionMatrix(cvTrain$classe,predTest)
 ```
 
@@ -149,33 +156,56 @@ confusionMatrix(cvTrain$classe,predTest)
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 1613   21    6    1    0
-##          B   24 1065   25    1    0
-##          C    0   28  960   16    1
-##          D    3    6   25  907    3
-##          E    2   13    9   15 1019
+##          A 1612   20    7    2    0
+##          B   23 1066   23    2    1
+##          C    0   29  958   17    1
+##          D    4    1   25  911    3
+##          E    2   12    9   14 1021
 ## 
 ## Overall Statistics
-##                                       
-##                Accuracy : 0.965       
-##                  95% CI : (0.96, 0.97)
-##     No Information Rate : 0.285       
-##     P-Value [Acc > NIR] : < 2e-16     
-##                                       
-##                   Kappa : 0.956       
-##  Mcnemar's Test P-Value : 6.59e-06    
+##                                         
+##                Accuracy : 0.966         
+##                  95% CI : (0.961, 0.971)
+##     No Information Rate : 0.285         
+##     P-Value [Acc > NIR] : < 2e-16       
+##                                         
+##                   Kappa : 0.957         
+##  Mcnemar's Test P-Value : 0.000113      
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity             0.982    0.940    0.937    0.965    0.996
-## Specificity             0.993    0.989    0.991    0.992    0.992
-## Pos Pred Value          0.983    0.955    0.955    0.961    0.963
-## Neg Pred Value          0.993    0.985    0.986    0.993    0.999
-## Prevalence              0.285    0.197    0.178    0.163    0.178
-## Detection Rate          0.280    0.185    0.167    0.157    0.177
+## Sensitivity             0.982    0.945    0.937    0.963    0.995
+## Specificity             0.993    0.989    0.990    0.993    0.992
+## Pos Pred Value          0.982    0.956    0.953    0.965    0.965
+## Neg Pred Value          0.993    0.987    0.987    0.993    0.999
+## Prevalence              0.285    0.196    0.177    0.164    0.178
+## Detection Rate          0.280    0.185    0.166    0.158    0.177
 ## Detection Prevalence    0.285    0.193    0.174    0.164    0.184
-## Balanced Accuracy       0.988    0.965    0.964    0.979    0.994
+## Balanced Accuracy       0.988    0.967    0.964    0.978    0.994
 ```
 
 This shows an accuracy of **96.5%**, or an error rate of **3.5%** which can be expected to be similar to new sample data as the validation data was not used in construction of the model.   The 95% Confidence Interval for the validation test is 96% to 97%.   This is a very good result, so some confidence can be placed on predictions made using this model.
+
+### Model Analysis
+Finally we analyse the model and investigate the significant parameters, it is interesting to note that 50% of the relative influence in the model comes from only 5 of ~50 variables, as shown in the second graph below:
+
+```r
+s<-summary(mod)
+```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-51.png) 
+
+```r
+chart<-data.frame(variable=s$var[seq(1,5)],influence=s$rel.inf[seq(1,5)])
+qplot(x=variable,y=influence,data=chart,geom="bar", stat="identity")
+```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-52.png) 
+From this we can show the impacts of key variables on the outcome, such as this which shows groupings for particular error types
+
+```r
+qplot(x=roll_belt,y=pitch_forearm,color=classe,data=cvTrain,main="Classe from pitch_forearm against roll_belt")
+```
+
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6.png) 
