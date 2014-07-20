@@ -411,7 +411,6 @@ testData&lt;-tidyData(testData)
 for (x in seq(1,dim(testData)[2]-2)) {
     m&lt;-modifiers[x,1]
     s&lt;-modifiers[x,2]
-    modifiers[x,]&lt;-c(m,s)
     testData[,x]&lt;-normalise(testData[,x],m,s)
 }
 </code></pre>
