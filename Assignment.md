@@ -53,24 +53,39 @@ Data is loaded from the training file and the following transformations are made
 ```r
 allData<-read.csv(file="data//pml-training.csv",na.strings = "NA",stringsAsFactors=F)
 
-#drop all new_window rows
-allData<-allData %>% filter(new_window!="yes")
-allData<-allData %>% select(-starts_with('stddev_'),-starts_with('var_'),-starts_with('avg_'),-starts_with('min_'),-starts_with('amplitude_'),-starts_with('max_'),-starts_with('kurtosis'),-starts_with('skewness'))
-
-allData<-allData %>% select(-X,-user_name,-starts_with('raw_timestamp_part'),-cvtd_timestamp,-new_window,-num_window)
-
-#convert classe to a factor
-
-allData<-allData %>% mutate(classe=as.factor(classe))
+tidyData<-function(allData){
+    #drop all new_window rows
+    allData<-allData %>% filter(new_window!="yes")
+    allData<-allData %>% select(-starts_with('stddev_'),-starts_with('var_'),-starts_with('avg_'),-starts_with('min_'),-starts_with('amplitude_'),-starts_with('max_'),-starts_with('kurtosis'),-starts_with('skewness'))
+    
+    allData<-allData %>% select(-X,-user_name,-starts_with('raw_timestamp_part'),-cvtd_timestamp,-new_window,-num_window)
+    
+    #convert classe to a factor
+    
+    allData<-allData %>% mutate(classe=as.factor(classe))
+    return(allData)
+}
+allData<-tidyData(allData)
 ```
 
 ### Data normalisation
-All data is normalised to a mean of 0 and sd of 1.
+All data is normalised to a mean of 0 and standard deviation of 1.  This assits learning algorithms by leveling the variables so that a variable 0-1 can be wweighted the same as a variable 0-100.  However it is critical that this process is repeated with the same mean and standard deviations when performing predictions on new data.
 
 ```r
-normalise<-function(x){;m<-mean(x);s<-sd(x);x<-(x-m)/s;x}
-for (x in seq(1,dim(allData)[2]-1)) {allData[,x]<-normalise(allData[,x])}
+modifiers<-matrix(ncol=2,nrow=dim(allData)[2]-1)
+colnames(modifiers)<-c("mean","sd")
+normalise<-function(x,m,s){
+    x<-(x-m)/s;return(x)
+}
+for (x in seq(1,dim(allData)[2]-1)) {
+    debugger;
+    m<-mean(allData[,x]);
+    s<-sd(allData[,x])
+    modifiers[x,]<-c(m,s)
+    allData[,x]<-normalise(allData[,x],m,s)
+}
 ```
+
 ### Training and Validation DataSets
 After the initial transformations, data is split into a training and cross validation set, such that around 70% of records are avaialable for training, with the remainder used for checking for validation testing.
 
@@ -141,13 +156,31 @@ confusionMatrix(training$classe,predTrain)
 ## Detection Prevalence    0.285    0.193    0.174    0.164    0.184
 ## Balanced Accuracy       0.990    0.976    0.969    0.988    0.996
 ```
-As can be seen with the training set an accuracy of **97.6%** was obtained, leaving an error rate of **2.4%**, the 95% confidence interval is 97.3% to 97.8% 
+As can be seen with the training set an accuracy of **97.5%** was obtained, leaving an error rate of **2.5%**, the 95% confidence interval is 97.2% to 97.7% 
 
 ### Model Validation
 Our model is now validated against the data kept aside for validation and the confusion matrix supplied below.
 
 ```r
 predTest<-predict(mod,cvTrain)
+```
+
+```
+## Loading required package: gbm
+## Loading required package: survival
+## Loading required package: splines
+## 
+## Attaching package: 'survival'
+## 
+## The following object is masked from 'package:caret':
+## 
+##     cluster
+## 
+## Loading required package: parallel
+## Loaded gbm 2.1
+```
+
+```r
 confusionMatrix(cvTrain$classe,predTest)
 ```
 
@@ -185,7 +218,7 @@ confusionMatrix(cvTrain$classe,predTest)
 ## Balanced Accuracy       0.988    0.967    0.964    0.978    0.994
 ```
 
-This shows an accuracy of **96.5%**, or an error rate of **3.5%** which can be expected to be similar to new sample data as the validation data was not used in construction of the model.   The 95% Confidence Interval for the validation test is 96% to 97%.   This is a very good result, so some confidence can be placed on predictions made using this model.
+This shows an accuracy of **96.6%**, or an error rate of **3.4%** which can be expected to be similar to new sample data as the validation data was not used in construction of the model.   The 95% Confidence Interval for the validation test is 96.1% to 97.1%.   This is a very good result, so some confidence can be placed on predictions made using this model.
 
 ### Model Analysis
 Finally we analyse the model and investigate the significant parameters, it is interesting to note that 50% of the relative influence in the model comes from only 5 of ~50 variables, as shown in the second graph below:
@@ -194,18 +227,44 @@ Finally we analyse the model and investigate the significant parameters, it is i
 s<-summary(mod)
 ```
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-51.png) 
+![plot of chunk modelAnalysis](figure/modelAnalysis1.png) 
 
 ```r
 chart<-data.frame(variable=s$var[seq(1,5)],influence=s$rel.inf[seq(1,5)])
 qplot(x=variable,y=influence,data=chart,geom="bar", stat="identity")
 ```
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-52.png) 
+![plot of chunk modelAnalysis](figure/modelAnalysis2.png) 
 From this we can show the impacts of key variables on the outcome, such as this which shows groupings for particular error types
 
 ```r
 qplot(x=roll_belt,y=pitch_forearm,color=classe,data=cvTrain,main="Classe from pitch_forearm against roll_belt")
 ```
 
-![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6.png) 
+![plot of chunk modelAnalysisChart](figure/modelAnalysisChart.png) 
+
+### Test Data Predictions
+Now that we have a model, the test data can be evaluated to create the final predictions.  Initially we load, tidy and normalise (with the parameters identified during the initial normlisation) the test data
+
+
+```r
+testData<-read.csv("data//pml-testing.csv",na.strings = "NA",stringsAsFactors=F)
+#create a dummy classe so that the tidy script works
+testData$classe=1
+testData<-tidyData(testData)
+for (x in seq(1,dim(testData)[2]-2)) {
+    m<-modifiers[x,1]
+    s<-modifiers[x,2]
+    testData[,x]<-normalise(testData[,x],m,s)
+}
+```
+
+
+```r
+    predict(mod,testData)
+```
+
+```
+##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E
+```

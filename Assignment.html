@@ -341,7 +341,23 @@ confusionMatrix(training$classe,predTrain)
 <p>Our model is now validated against the data kept aside for validation and the confusion matrix supplied below.</p>
 
 <pre><code class="r">predTest&lt;-predict(mod,cvTrain)
-confusionMatrix(cvTrain$classe,predTest)
+</code></pre>
+
+<pre><code>## Loading required package: gbm
+## Loading required package: survival
+## Loading required package: splines
+## 
+## Attaching package: &#39;survival&#39;
+## 
+## The following object is masked from &#39;package:caret&#39;:
+## 
+##     cluster
+## 
+## Loading required package: parallel
+## Loaded gbm 2.1
+</code></pre>
+
+<pre><code class="r">confusionMatrix(cvTrain$classe,predTest)
 </code></pre>
 
 <pre><code>## Confusion Matrix and Statistics
@@ -411,7 +427,6 @@ testData&lt;-tidyData(testData)
 for (x in seq(1,dim(testData)[2]-2)) {
     m&lt;-modifiers[x,1]
     s&lt;-modifiers[x,2]
-    modifiers[x,]&lt;-c(m,s)
     testData[,x]&lt;-normalise(testData[,x],m,s)
 }
 </code></pre>
